@@ -1,4 +1,6 @@
-var canvas, gl, program, timerStart, lastRenderTime, fb;
+var canvas, program, timerStart, lastRenderTime, fb;
+/** @type {WebGLRenderingContext} */
+var gl;
 
 function createAndSetupTexture(gl) {
 	var texture = gl.createTexture();
@@ -6,8 +8,8 @@ function createAndSetupTexture(gl) {
 
 	// Set up texture so we can render any size image and so we are
 	// working with pixels.
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
@@ -32,22 +34,13 @@ function init() {
 	canvas = document.getElementById("glCanvas");
 
 	gl = setupGL(canvas);
-	program = createProgram(gl);
+	program = createProgram(gl, document.getElementById("FRAG_SHADER").textContent);
 
 	timerStart = Date.now() * 0.001;
 	lastRenderTime = timerStart;
 
 	texture = connectTexture(gl, "u_bayer", 0, images.bayer);
-	texture = connectTexture(gl, "u_image", 1, images.lisa);
-
-	texture = connectTexture(gl, "u_buffer", 2, {width: 16, height: 16});
-	// Create and bind the framebuffer
-	const fb = gl.createFramebuffer();
-	gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
-	
-	// attach the texture as the first color attachment
-	const attachmentPoint = gl.COLOR_ATTACHMENT0;
-	gl.framebufferTexture2D(gl.FRAMEBUFFER, attachmentPoint, gl.TEXTURE_2D, texture, 0);
+	texture = connectTexture(gl, "u_image", 1, images.gamercat);
 
 	render();
 }
@@ -80,17 +73,21 @@ function setupGL(canvas) {
 	return gl;
 }
 
-function createProgram(gl) {
+const vertexSource = `precision highp float;
+attribute vec2 a_position;
+
+void main() {
+	gl_Position = vec4(a_position, 0, 1);
+}`;
+function createProgram(gl, fragmentSource) {
 	// create the vertex shader (boring)
-	let vert_dom = document.getElementById("VERT_SHADER");
 	let vertexShader = gl.createShader(gl.VERTEX_SHADER);
-	gl.shaderSource(vertexShader, vert_dom.text);
+	gl.shaderSource(vertexShader, vertexSource);
 	gl.compileShader(vertexShader);
 
 	// create the vertex shader (cool)
-	let frag_dom = document.getElementById("FRAG_SHADER");
 	let fragShader = gl.createShader(gl.FRAGMENT_SHADER);
-	gl.shaderSource(fragShader, frag_dom.text);
+	gl.shaderSource(fragShader, fragmentSource);
 	gl.compileShader(fragShader);
 
 	// glsl info log
