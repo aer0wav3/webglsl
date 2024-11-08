@@ -1,3 +1,5 @@
+// i hate this file.... it is cursed and will haunt me until the end of time
+
 var canvas, program, timerStart, lastRenderTime, fb;
 /** @type {WebGLRenderingContext} */
 var gl;
@@ -36,8 +38,7 @@ function init() {
 	gl = setupGL(canvas);
 	program = createProgram(gl, document.getElementById("FRAG_SHADER").textContent);
 
-	timerStart = Date.now() * 0.001;
-	lastRenderTime = timerStart;
+	time = 0;
 
 	texture = connectTexture(gl, "u_bayer", 0, images.bayer);
 	texture = connectTexture(gl, "u_image", 1, images.gamercat);
@@ -91,7 +92,9 @@ function createProgram(gl, fragmentSource) {
 	gl.compileShader(fragShader);
 
 	// glsl info log
-	console.log(gl.getShaderInfoLog(fragShader));
+	a = gl.getShaderInfoLog(fragShader);
+	console.log(a);
+	if (a) alert(a);
 
 	// create the program
 	let program = gl.createProgram();
@@ -100,6 +103,7 @@ function createProgram(gl, fragmentSource) {
 	gl.linkProgram(program);
 	gl.useProgram(program);
 
+	// auto resize canvas AND viewport
 	window.addEventListener("resize", ()=>{
 		canvas.width = document.defaultView.getComputedStyle(canvas).width.replace("px", "");
 		canvas.height = document.defaultView.getComputedStyle(canvas).height.replace("px", "");
@@ -109,28 +113,31 @@ function createProgram(gl, fragmentSource) {
 	return program;
 }
 
-function render() {
+function render(timeStamp) {
+	// update time
+	time = timeStamp * 0.001;
+
 	// update uniforms (time, resolution, etc)
 	updateUniforms();
 
-	// clear screen (does this do anything?)
+	// clear screen
 	gl.clearColor(0.0, 0.0, 0.0, 0.0);
 	gl.clear(gl.COLOR_BUFFER_BIT);
 	
-	// ???
+	// something???? i think this might be a culprit for framebuffers
 	let positionLocation = gl.getAttribLocation(program, "a_position");
 	gl.enableVertexAttribArray(positionLocation);
 	gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
 
-	// draw to texture
-	gl.drawArrays(gl.TRIANGLES, 0, 6);
-	gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+	// draw to texture? doesn't seem to work
+	//gl.drawArrays(gl.TRIANGLES, 0, 6);
+	//gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
 
 	// draw to canvas
 	gl.drawArrays(gl.TRIANGLES, 0, 6);
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-	// one more time
+	// again
 	window.requestAnimationFrame(render, canvas);
 }
 
@@ -139,7 +146,7 @@ function updateUniforms() {
 	// "uniform variable name": new Float32Array([values]) or Int32Array([values])
 	let uniforms = {
 		"u_resolution": new Float32Array([gl.drawingBufferWidth, gl.drawingBufferHeight]),
-		"u_time": new Float32Array([Date.now() * 0.001 - timerStart])
+		"u_time": new Float32Array([time])
 	};
 
 	// use uniforms object to set uniforms
