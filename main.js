@@ -54,10 +54,10 @@ async function getImages(imageURLs) {
 			images = await getImages(imageURLs);
 	
 			init();
-		} catch {
+		} catch(e) {
 			// now this is a problem for future me <3
-			console.error("failed to load images... you must be offline")
-			alert("failed to load resources")
+			console.error("failed to load images... you must be offline");
+			alert(e.stack);
 		}
 		
 	}

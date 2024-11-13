@@ -3,6 +3,7 @@
 var canvas, program, timerStart, lastRenderTime, fb;
 /** @type {WebGLRenderingContext} */
 var gl;
+var mousepos = {x:-1,y:-1};
 
 function createAndSetupTexture(gl) {
 	var texture = gl.createTexture();
@@ -12,8 +13,8 @@ function createAndSetupTexture(gl) {
 	// working with pixels.
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 
 	return texture;
 }
@@ -40,8 +41,9 @@ function init() {
 
 	time = 0;
 
-	texture = connectTexture(gl, "u_bayer", 0, images.bayer);
-	texture = connectTexture(gl, "u_image", 1, images.gamercat);
+	let imageNames = Object.keys(images);
+	for (let i = 0; i < imageNames.length; i++)
+		texture = connectTexture(gl, "u_" + imageNames[i], i, images[imageNames[i]]);
 
 	render();
 }
@@ -110,6 +112,11 @@ function createProgram(gl, fragmentSource) {
 		gl.viewport(0, 0, canvas.width, canvas.height);
 	});
 
+	window.addEventListener("mousemove", (e)=>{
+		mousepos.x = e.offsetX;
+		mousepos.y = e.offsetY;
+	})
+
 	return program;
 }
 
@@ -121,8 +128,8 @@ function render(timeStamp) {
 	updateUniforms();
 
 	// clear screen
-	gl.clearColor(0.0, 0.0, 0.0, 0.0);
-	gl.clear(gl.COLOR_BUFFER_BIT);
+	//gl.clearColor(0.0, 0.0, 0.0, 0.0);
+	//gl.clear(gl.COLOR_BUFFER_BIT);
 	
 	// something???? i think this might be a culprit for framebuffers
 	let positionLocation = gl.getAttribLocation(program, "a_position");
@@ -146,7 +153,8 @@ function updateUniforms() {
 	// "uniform variable name": new Float32Array([values]) or Int32Array([values])
 	let uniforms = {
 		"u_resolution": new Float32Array([gl.drawingBufferWidth, gl.drawingBufferHeight]),
-		"u_time": new Float32Array([time])
+		"u_time": new Float32Array([time]),
+		"u_mouse": new Float32Array([mousepos.x, mousepos.y]),
 	};
 
 	// use uniforms object to set uniforms
