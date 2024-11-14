@@ -38,13 +38,13 @@ function init() {
 
 	gl = setupGL(canvas);
 	program = createProgram(gl, document.getElementById("FRAG_SHADER").textContent);
-
-	time = 0;
-
+	
+	// automatically connect textures based on loaded images
 	let imageNames = Object.keys(images);
 	for (let i = 0; i < imageNames.length; i++)
 		texture = connectTexture(gl, "u_" + imageNames[i], i, images[imageNames[i]]);
-
+	
+	time = 0;
 	render();
 }
 
