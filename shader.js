@@ -38,12 +38,15 @@ function init() {
 
 	gl = setupGL(canvas);
 	program = createProgram(gl, document.getElementById("FRAG_SHADER").textContent);
-	
+
+	console.log("attaching textures (this can take a bit)");
 	// automatically connect textures based on loaded images
 	let imageNames = Object.keys(images);
-	for (let i = 0; i < imageNames.length; i++)
+	for (let i = 0; i < imageNames.length; i++) {
 		texture = connectTexture(gl, "u_" + imageNames[i], i, images[imageNames[i]]);
-	
+		console.log(`connecting texure '${imageNames[i]}' (${i+1}/${imageNames.length})`);
+	}
+		
 	time = 0;
 	render();
 }
@@ -88,15 +91,20 @@ function createProgram(gl, fragmentSource) {
 	gl.shaderSource(vertexShader, vertexSource);
 	gl.compileShader(vertexShader);
 
-	// create the vertex shader (cool)
+	// create the fragment shader (cool)
 	let fragShader = gl.createShader(gl.FRAGMENT_SHADER);
 	gl.shaderSource(fragShader, fragmentSource);
 	gl.compileShader(fragShader);
 
 	// glsl info log
 	a = gl.getShaderInfoLog(fragShader);
-	console.log(a);
-	if (a) alert(a);
+	console.log("fragment shader compiled\n" + a);
+	if (a) {
+		alert(a);
+		if (!gl.getShaderParameter(fragShader, gl.COMPILE_STATUS)) {
+			throw a;
+		}
+	}
 
 	// create the program
 	let program = gl.createProgram();
