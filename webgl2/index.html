@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Game</title>
+		<!-- <link href="/style.css" rel="stylesheet" type="text/css" media="all"> -->
+		<style>
+			html, body {
+				width: 100vw;
+				height: 100vh;
+				margin: 0;
+				background: #000;
+			}
+			canvas {
+				position: fixed;
+				width: 100%;
+				height: 100%;
+				image-rendering: pixelated;
+			}
+			pre {
+				position: fixed;
+				background-color: #0000007f;
+				backdrop-filter: blur(4px);
+				margin: 0;
+				padding: 4px;
+				color: white;
+			}
+		</style>
+
+		<script type="x-shader/x-fragment" id="FRAG_SHADER"># version 300 es
+precision highp float;
+
+uniform lowp vec2 u_resolution;
+uniform highp float u_time;
+uniform mediump float u_deltaTime;
+
+uniform sampler2D u_bayer;
+uniform sampler2D u_image;
+
+out vec4 fragColor;
+
+void main() {
+	vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution.xy ) / u_resolution.y;
+
+	vec3 col = vec3(gl_FragCoord.xy / 50.0, 0);
+
+	fragColor = vec4(fract(col), 1.0);
+}
+		</script>
+
+	</head>
+	<body>
+		<canvas id="glCanvas"></canvas>
+		<pre></pre>
+
+		<script>
+const [realLog, realWarn, realError] = [console.log, console.warn, console.error];
+console.log = (e)=>{document.querySelector("pre").innerHTML += "<span>" + e + "</span>\n"; realLog(e)};
+console.warn = (e)=>{document.querySelector("pre").innerHTML += "<span style='color:yellow'>" + e + "</span>\n"; realWarn(e)};
+console.error = (e)=>{document.querySelector("pre").innerHTML += "<span style='color:red'>" + e + "</span>\n"; realError(e)};
+		</script>
+		<script src="shader.js"></script>
+		<script src="main.js"></script>
+		<script src="game.js"></script>
+	</body>
+</html>
