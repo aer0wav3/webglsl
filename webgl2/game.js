@@ -3,7 +3,8 @@
 (async function() {
 	try {
 		let imageURLs = {
-			bayer: "https://raw.githubusercontent.com/aer0wav3/webglsl/refs/heads/main/textures/bayer.png"
+			bayer: "https://raw.githubusercontent.com/aer0wav3/webglsl/refs/heads/main/textures/bayer.png",
+			image: "https://media.tenor.com/raWtfp1IAm0AAAAe/spin-skull-bad-to-bone.png",
 		}; 
 		images = await getImages(imageURLs);
 	} catch(e) {
@@ -31,7 +32,7 @@
 	vao = setupVertexBuffer(gl, program);
 
 	// auto resize canvas AND viewport
-	/*window.addEventListener("resize", ()=>{
+	window.addEventListener("resize", ()=>{
 		canvas.width = document.defaultView.getComputedStyle(canvas).width.replace("px", "");
 		canvas.height = document.defaultView.getComputedStyle(canvas).height.replace("px", "");
 		gl.viewport(0, 0, canvas.width, canvas.height);
@@ -42,6 +43,7 @@
 		mousepos.y = e.offsetY;
 	});
 
+	gl.useProgram(program);
 	// automatically connect textures based on loaded images
 	let imageNames = Object.keys(images);
 	for (let i = 0; i < imageNames.length; i++) {
@@ -49,11 +51,20 @@
 		texture = connectTexture(gl, "u_" + imageNames[i], i, images[imageNames[i]]);
 	}
 	console.log(`done (${imageNames.length}/${imageNames.length})`);
-	*/
 
-	gl.useProgram(program);
 	gl.bindVertexArray(vao);
-	gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+	time = 0;
+
+	render = (timestamp)=>{
+		time = timestamp * 0.001;
+		updateUniforms();
+		gl.drawArrays(gl.TRIANGLES, 0, 6);
+		window.requestAnimationFrame(render, canvas);
+	}
+
+	render(0);
+	
 
 	//time = 0;
 	//render(gl, program);

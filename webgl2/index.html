@@ -35,17 +35,67 @@ uniform lowp vec2 u_resolution;
 uniform highp float u_time;
 uniform mediump float u_deltaTime;
 
-uniform sampler2D u_bayer;
 uniform sampler2D u_image;
+uniform sampler2D u_bayer;
 
 out vec4 fragColor;
+
+void rotate(inout vec2 p, float a) {
+	p = cos(a)*p + sin(a)*vec2(p.y, -p.x);
+}
+
+// sdf from https://www.shadertoy.com/view/wtVyWK
+
+float scene(vec3 p) {
+	p = fract(p + 0.5);
+	return -length(p - vec3(0.5)) + 0.7;
+}
+
+vec3 norm(vec3 p) {
+	mat3 k = mat3(p,p,p)-mat3(0.001);
+	vec3 n = normalize(scene(p) - vec3(scene(k[0]),scene(k[1]),scene(k[2])));
+	return scene(p) > 0.001 ? vec3(-1) : n;
+}
 
 void main() {
 	vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution.xy ) / u_resolution.y;
 
-	vec3 col = vec3(gl_FragCoord.xy / 50.0, 0);
+	vec3 origin = vec3(0,0,-2.0);
+	rotate(origin.xz, -u_time);
+	vec3 dir = normalize(vec3(uv,1));
+	rotate(dir.xz, -u_time);
 
-	fragColor = vec4(fract(col), 1.0);
+	float rayLength = 0.0;
+	int STEPS = 0;
+	float dist = 0.0;
+
+	for (int steps = 0; steps < 80; steps++) {
+		dist = scene(origin + dir * rayLength);
+
+		if (dist < 0.001) break;
+		if (rayLength > 10.0) break;
+
+		rayLength += dist;
+		STEPS = steps;
+	}
+
+	vec3 n = norm(origin + dir * rayLength);
+	rotate(n.xz, u_time);
+	
+	// color
+	vec3 col = n * 0.5 + 0.5;
+
+	// ao
+	col *= 1.0 - vec3(STEPS) / 80.0;
+
+	// fog
+	col = mix(col, vec3(1), rayLength / 10.0);
+
+	// dither pass
+	float bayer = texture(u_bayer, gl_FragCoord.xy / 16.0).x;
+	col = vec3(col.r > bayer, col.g > bayer, col.b > bayer);
+
+	fragColor = vec4(col, 1.0);
 }
 		</script>
 
@@ -54,7 +104,7 @@ void main() {
 		<canvas id="glCanvas"></canvas>
 		<pre></pre>
 
-		<script>
+		<script type="e">
 const [realLog, realWarn, realError] = [console.log, console.warn, console.error];
 console.log = (e)=>{document.querySelector("pre").innerHTML += "<span>" + e + "</span>\n"; realLog(e)};
 console.warn = (e)=>{document.querySelector("pre").innerHTML += "<span style='color:yellow'>" + e + "</span>\n"; realWarn(e)};
