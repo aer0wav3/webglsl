@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="ascii">
-	<meta name="author" content="ærowave">
+	<meta charset="UTF-8">
+	<meta name="author" content="Ã¦rowave">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>ærowave</title>
+	<title>Ã¦rowave</title>
 	<style>
 		canvas {
 			width: 100vw;
@@ -13,6 +13,21 @@
 			top: 0;
 			left: 0;
 			z-index: -1;
+			image-rendering: pixelated;
+		}
+		pre {
+			position: fixed;
+			top: 0;
+			left: 0;
+			margin: 0;
+			padding: 1em;
+			background: rgba(0, 0, 0, 0.5);
+			color: white;
+			font-family: monospace;
+			white-space: pre-wrap;
+			word-break: break-all;
+			z-index: 1;
+			backdrop-filter: blur(8px);
 		}
 	</style>
 	<script src="renderer.js"></script>

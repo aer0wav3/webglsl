@@ -45,6 +45,12 @@ void main() {
 				else if (value.length === 3) gl.uniform3fv(location, value);
 				else if (value.length === 4) gl.uniform4fv(location, value);
 				else throw Error(`unsupported uniform length: ${value.length}`);
+			} else if (value instanceof Int8Array || value instanceof Int16Array || value instanceof Int32Array) {
+				if (value.length === 1) gl.uniform1iv(location, value);
+				else if (value.length === 2) gl.uniform2iv(location, value);
+				else if (value.length === 3) gl.uniform3iv(location, value);
+				else if (value.length === 4) gl.uniform4iv(location, value);
+				else throw Error(`unsupported uniform length: ${value.length}`);
 			} else {
 				gl.uniform1f(location, value);
 			}
@@ -89,15 +95,6 @@ void main() {
 
 		return {
 			program: program,
-			render: (uniforms) => {
-				this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
-				this.gl.useProgram(program);
-
-				Renderer.setUniforms(this.gl, uniforms);
-				this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.quadBuffer);
-
-				this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
-			},
 			delete: () => this.gl.deleteProgram(program)
 		}
 	}
@@ -152,12 +149,70 @@ void main() {
 		}
 	}
 
-	static render(gl, program, uniforms) {
-		gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-		gl.useProgram(program.program);
-		setUniforms(gl, uniforms);
-		gl.drawArrays(gl.TRIANGLES, 0, 6)
+	render(program, uniforms) {
+		this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+		this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
+		this.gl.useProgram(program.program);
+
+		Renderer.setUniforms(this.gl, uniforms);
+		this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.quadBuffer);
+
+		this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
 	}
 
+	createRenderPass(width, height) {
+		const gl = this.gl;
 
+		// Helper to create a framebuffer + texture
+		function createFBTex() {
+			const fb = gl.createFramebuffer();
+			const tex = gl.createTexture();
+			gl.bindTexture(gl.TEXTURE_2D, tex);
+			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+			gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+			return { fb, tex };
+		}
+
+		// Create two framebuffer/texture pairs
+		const pairA = createFBTex();
+		const pairB = createFBTex();
+
+		let writeIdx = 0; // 0: A is write, 1: B is write
+
+		return {
+			delete: () => {
+				gl.deleteFramebuffer(pairA.fb);
+				gl.deleteTexture(pairA.tex);
+				gl.deleteFramebuffer(pairB.fb);
+				gl.deleteTexture(pairB.tex);
+			},
+			// Render to the write framebuffer
+			render: (program, uniforms) => {
+				const writePair = writeIdx === 0 ? pairA : pairB;
+				gl.bindFramebuffer(gl.FRAMEBUFFER, writePair.fb);
+				gl.viewport(0, 0, width, height);
+				gl.useProgram(program.program);
+				Renderer.setUniforms(gl, uniforms);
+				gl.bindBuffer(gl.ARRAY_BUFFER, this.quadBuffer);
+				gl.drawArrays(gl.TRIANGLES, 0, 6);
+				// Swap for next frame
+				writeIdx = 1 - writeIdx;
+			},
+			get width() {
+				return width;
+			},
+			get height() {
+				return height;
+			},
+			// Get the texture to use as input (the one not just written to)
+			get texture() {
+				return writeIdx === 0 ? pairB.tex : pairA.tex;
+			}
+		}
+	}
 }
