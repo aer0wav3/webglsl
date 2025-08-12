@@ -108,9 +108,9 @@ vec4 texture2DAA(sampler2D tex, vec2 uv) {
 }
 
 void main() {
-	vec2 res = textureSize(iTexture, 0);
+	vec2 res = vec2(textureSize(iTexture, 0));
 	vec2 uv = gl_FragCoord.xy / iResolution;
-	fragColor = vec3(texture2DAA(iTexture, uv - vec2(1.0 / res.x, 0)).r, texture2DAA(iTexture, uv).g, texture2DAA(iTexture, uv + vec2(1.0 / res.x, 0)).b, 1.0)
+	fragColor = vec4(texture2DAA(iTexture, uv - vec2(1.0 / res.x, 0)).r, texture2DAA(iTexture, uv).g, texture2DAA(iTexture, uv + vec2(1.0 / res.x, 0)).b, 1.0);
 }
 
 `)
